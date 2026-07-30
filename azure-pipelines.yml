@@ -92,7 +92,7 @@ stages:
         SonarQube: 'SonarConn'        # your service connection name
         scannerMode: 'CLI'
         configMode: 'manual'
-        cliProjectKey: 'nbardoloi_juice-shop'       # e.g. nbardoloi_juice-shop
+        cliProjectKey: 'nbardoloi'       # e.g. nbardoloi_juice-shop
         cliProjectName: 'juice-shop'
         organization: 'nbardoloi'     # e.g. nbardoloi
       displayName: 'Prepare SonarQube Analysis'
