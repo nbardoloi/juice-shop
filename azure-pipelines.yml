@@ -132,6 +132,11 @@ stages:
           latest
       displayName: 'Build & Push Docker Image'
 
+    - script: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        trivy --version
+      displayName: 'Install Trivy'        # ← add this in Stage 4
+      
     # Trivy scan on the built image
     - script: |
         trivy image \
