@@ -1,0 +1,95 @@
+trigger:
+- master        # Change to 'main' if your default branch is main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  imageName: 'juice-shop'
+
+stages:
+
+# -----------------------------
+# Stage 1 - Build
+# -----------------------------
+- stage: Build
+  displayName: 'Build Application'
+
+  jobs:
+  - job: Build
+    displayName: 'Install Dependencies'
+
+    steps:
+    - checkout: self
+
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '20.x'
+      displayName: 'Install Node.js'
+
+    - script: |
+        node --version
+        npm --version
+      displayName: 'Verify Node Installation'
+
+    - script: |
+        npm install
+      displayName: 'Install npm packages'
+
+# -----------------------------
+# Stage 2 - Test
+# -----------------------------
+- stage: Test
+  displayName: 'Run Tests'
+  dependsOn: Build
+
+  jobs:
+  - job: Test
+    displayName: 'Execute Tests'
+
+    steps:
+    - checkout: self
+
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '20.x'
+
+    - script: |
+        npm install
+      displayName: 'Install Dependencies'
+
+    - script: |
+        npm test
+      displayName: 'Run Unit Tests'
+
+# -----------------------------
+# Stage 3 - Docker
+# -----------------------------
+- stage: Docker
+  displayName: 'Build Docker Image'
+  dependsOn: Test
+
+  jobs:
+  - job: DockerBuild
+
+    steps:
+    - checkout: self
+
+    - script: |
+        docker build -t $(imageName):$(Build.BuildId) .
+      displayName: 'Docker Build'
+
+# -----------------------------
+# Stage 4 - Publish
+# -----------------------------
+- stage: Publish
+  displayName: 'Publish Image'
+  dependsOn: Docker
+
+  jobs:
+  - job: Publish
+
+    steps:
+    - script: |
+        echo "Publishing image will be added later."
+      displayName: 'Placeholder'
