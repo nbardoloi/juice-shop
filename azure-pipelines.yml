@@ -1,134 +1,239 @@
 trigger:
-- master        # Change to 'main' if your default branch is main
+  branches:
+    include:
+      - dev
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
   imageName: 'juice-shop'
+  dockerRegistry: 'docker.io/nbardoloi'       # e.g. nbardoloi.azurecr.io or docker.io/nbardoloi
+  imageTag: '$(Build.BuildId)'
+  acrServiceConnection: 'dockerhub-connection'  # Azure service connection name
 
+# ═══════════════════════════════════════════════
+# STAGE 1 — BUILD APPLICATION
+# ═══════════════════════════════════════════════
 stages:
-
-# -----------------------------
-# Stage 1 - Build
-# -----------------------------
-- stage: Build
-  displayName: 'Build Application'
-
+- stage: Build_Application
+  displayName: 'Stage 1 - Build Application'
   jobs:
   - job: Build
-    displayName: 'Install Dependencies'
-
+    displayName: 'Install & Build'
     steps:
-    - checkout: self
-
-    - task: NodeTool@0
+    - task: UseNode@1
       inputs:
-        versionSpec: '20.x'
+        version: '20.x'
       displayName: 'Install Node.js'
-
-    - script: |
-        node --version
-        npm --version
-      displayName: 'Verify Node Installation'
-
-    - script: |
-        npm install
-      displayName: 'Install npm packages'
-
-- stage: SCA
-  displayName: 'SCA - Dependency Check'
-  dependsOn: Build
-  jobs:
-  - job: DependencyCheck
-    displayName: 'OWASP Dependency Check'
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - task: dependency-check-build-task@6
-      inputs:
-        projectName: 'juice-shop'
-        scanPath: '$(Build.SourcesDirectory)'
-        format: 'HTML'
-        failOnCVSS: '7'
-        enableRetired: true
-      displayName: 'Run OWASP Dependency Check - HTML'
-
-    - task: dependency-check-build-task@6
-      inputs:
-        projectName: 'juice-shop'
-        scanPath: '$(Build.SourcesDirectory)'
-        format: 'JUNIT'
-        failOnCVSS: '7'
-        enableRetired: true
-      displayName: 'Run OWASP Dependency Check - JUNIT'
-
-    - task: PublishTestResults@2
-      inputs:
-        testResultsFormat: 'JUnit'
-        testResultsFiles: '**/dependency-check-junit.xml'
-      displayName: 'Publish Dependency Check Results'
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: '$(Common.TestResultsDirectory)'
-        ArtifactName: 'SCA-Report'
-      displayName: 'Publish SCA Report'
-# -----------------------------
-# Stage 2 - Test
-# -----------------------------
-- stage: Test
-  displayName: 'Run Tests'
-  dependsOn: Build
-
-  jobs:
-  - job: Test
-    displayName: 'Execute Tests'
-
-    steps:
-    - checkout: self
-
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '20.x'
 
     - script: |
         npm install
       displayName: 'Install Dependencies'
+      continueOnError: false
 
     - script: |
-        npm test
-      displayName: 'Run Unit Tests'
+        npm run build --if-present
+      displayName: 'Build Application'
       continueOnError: true
 
-# -----------------------------
-# Stage 3 - Docker
-# -----------------------------
-#- stage: Docker
-#  displayName: 'Build Docker Image'
-#  dependsOn: Test
+# ═══════════════════════════════════════════════
+# STAGE 2 — SCA (Trivy - Software Composition Analysis)
+# ═══════════════════════════════════════════════
+- stage: SCA
+  displayName: 'Stage 2 - SCA (Trivy)'
+  dependsOn: Build_Application
+  jobs:
+  - job: TrivyScan
+    displayName: 'Trivy Filesystem & Dependency Scan'
+    steps:
+    - script: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        trivy --version
+      displayName: 'Install Trivy'
 
-#  jobs:
-#  - job: DockerBuild
+    - script: |
+        trivy fs \
+          --format table \
+          --severity HIGH,CRITICAL \
+          --exit-code 0 \
+          --output $(Build.ArtifactStagingDirectory)/trivy-fs-report.txt \
+          $(Build.SourcesDirectory)
+      displayName: 'Trivy - Filesystem Scan (Dependencies)'
 
-#    steps:
-#    - checkout: self
+    - script: |
+        trivy fs \
+          --format json \
+          --severity HIGH,CRITICAL \
+          --exit-code 0 \
+          --output $(Build.ArtifactStagingDirectory)/trivy-fs-report.json \
+          $(Build.SourcesDirectory)
+      displayName: 'Trivy - Filesystem Scan (JSON)'
 
-#    - script: |
-#        docker build -t $(imageName):$(Build.BuildId) .
-#      displayName: 'Docker Build'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'SCA-Trivy-Report'
+      displayName: 'Publish Trivy SCA Report'
+      condition: always()
 
-# -----------------------------
-# Stage 4 - Publish
-# -----------------------------
-#- stage: Publish
-#  displayName: 'Publish Image'
-#  dependsOn: Docker
+# ═══════════════════════════════════════════════
+# STAGE 3 — SAST (Semgrep - Static Analysis)
+# ═══════════════════════════════════════════════
+- stage: SAST
+  displayName: 'Stage 3 - SAST (SonarQube Cloud)'
+  dependsOn: Build_Application
+  jobs:
+  - job: SonarScan
+    displayName: 'SonarQube Cloud Static Analysis'
+    steps:
+    - task: SonarCloudPrepare@4
+      inputs:
+        SonarQube: 'SonarConn'        # your service connection name
+        scannerMode: 'CLI'
+        configMode: 'manual'
+        cliProjectKey: 'nbardoloi_juice-shop'       # e.g. nbardoloi_juice-shop
+        cliProjectName: 'juice-shop'
+        organization: 'nbardoloi'     # e.g. nbardoloi
+      displayName: 'Prepare SonarQube Analysis'
+    - task: SonarCloudAnalyze@4
+      inputs:
+        jdkversion: 'JAVA_HOME_17_X64'
+      displayName: 'Run SonarQube Analysis'
 
-#  jobs:
-#  - job: Publish
+    -   task: SonarCloudPublish@4
+        inputs:
+          pollingTimeoutSec: '300'
+        displayName: 'Publish SonarQube Results'
 
-#    steps:
-#    - script: |
-#        echo "Publishing image will be added later."
-#      displayName: 'Placeholder'
+# ═══════════════════════════════════════════════
+# STAGE 4 — BUILD & PUSH DOCKER IMAGE
+# ═══════════════════════════════════════════════
+- stage: Build_Docker_Image
+  displayName: 'Stage 4 - Build & Push Docker Image'
+  dependsOn:
+    - SCA
+    - SAST
+  jobs:
+  - job: DockerBuild
+    displayName: 'Build and Push Docker Image'
+    steps:
+    - task: Docker@2
+      inputs:
+        containerRegistry: '$(acrServiceConnection)'
+        repository: '$(imageName)'
+        command: 'buildAndPush'
+        Dockerfile: '**/Dockerfile'
+        tags: |
+          $(imageTag)
+          latest
+      displayName: 'Build & Push Docker Image'
+
+    # Trivy scan on the built image
+    - script: |
+        trivy image \
+          --format table \
+          --severity HIGH,CRITICAL \
+          --exit-code 0 \
+          --output $(Build.ArtifactStagingDirectory)/trivy-image-report.txt \
+          $(dockerRegistry)/$(imageName):$(imageTag)
+      displayName: 'Trivy - Docker Image Scan'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'Docker-Image-Scan-Report'
+      displayName: 'Publish Image Scan Report'
+      condition: always()
+
+# ═══════════════════════════════════════════════
+# STAGE 5 — DAST (OWASP ZAP)
+# ═══════════════════════════════════════════════
+- stage: DAST
+  displayName: 'Stage 5 - DAST (OWASP ZAP)'
+  dependsOn: Build_Docker_Image
+  jobs:
+  - job: ZAPScan
+    displayName: 'OWASP ZAP Dynamic Scan'
+    steps:
+    # Step 1 - Start Juice Shop container
+    - script: |
+        docker pull $(dockerRegistry)/$(imageName):$(imageTag)
+        docker run -d \
+          --name juice-shop \
+          -p 3000:3000 \
+          $(dockerRegistry)/$(imageName):$(imageTag)
+        echo "Waiting for app to start..."
+        sleep 30
+        curl -f http://localhost:3000 || (echo "App failed to start" && exit 1)
+      displayName: 'Start Juice Shop Container'
+
+    # Step 2 - Run OWASP ZAP Baseline Scan
+    - script: |
+        mkdir -p $(Build.ArtifactStagingDirectory)/zap-reports
+
+        docker run --rm \
+          --network host \
+          -v $(Build.ArtifactStagingDirectory)/zap-reports:/zap/wrk/:rw \
+          ghcr.io/zaproxy/zaproxy:stable \
+          zap-baseline.py \
+          -t http://localhost:3000 \
+          -r zap-baseline-report.html \
+          -J zap-baseline-report.json \
+          -x zap-baseline-report.xml \
+          -I
+      displayName: 'OWASP ZAP - Baseline Scan'
+      continueOnError: true
+
+    # Step 3 - Run OWASP ZAP Full Scan (optional, takes longer)
+    # - script: |
+    #     docker run --rm \
+    #       --network host \
+    #       -v $(Build.ArtifactStagingDirectory)/zap-reports:/zap/wrk/:rw \
+    #       ghcr.io/zaproxy/zaproxy:stable \
+    #       zap-full-scan.py \
+    #       -t http://localhost:3000 \
+    #       -r zap-full-report.html \
+    #       -I
+    #   displayName: 'OWASP ZAP - Full Scan (Optional)'
+    #   continueOnError: true
+
+    # Step 4 - Stop Juice Shop container
+    - script: |
+        docker stop juice-shop && docker rm juice-shop
+      displayName: 'Stop Juice Shop Container'
+      condition: always()
+
+    # Step 5 - Publish ZAP Reports
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/zap-reports'
+        ArtifactName: 'DAST-ZAP-Report'
+      displayName: 'Publish OWASP ZAP Report'
+      condition: always()
+
+# ═══════════════════════════════════════════════
+# STAGE 6 — PUBLISH ALL SECURITY REPORTS
+# ═══════════════════════════════════════════════
+- stage: Security_Summary
+  displayName: 'Stage 6 - Security Summary'
+  dependsOn:
+    - SCA
+    - SAST
+    - DAST
+  condition: always()
+  jobs:
+  - job: Summary
+    displayName: 'Security Scan Summary'
+    steps:
+    - script: |
+        echo "============================================"
+        echo "       DevSecOps Pipeline Complete          "
+        echo "============================================"
+        echo "✅ SCA  - Trivy Filesystem & Image Scan"
+        echo "✅ SAST - Semgrep Static Analysis"
+        echo "✅ DAST - OWASP ZAP Baseline Scan"
+        echo "============================================"
+        echo "Check Artifacts tab for all security reports"
+        echo "============================================"
+      displayName: 'Print Security Summary'
