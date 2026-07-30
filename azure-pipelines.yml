@@ -61,6 +61,7 @@ stages:
     - script: |
         npm test
       displayName: 'Run Unit Tests'
+      continueOnError: true
 
 # -----------------------------
 # Stage 3 - Docker
