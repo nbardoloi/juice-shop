@@ -36,6 +36,44 @@ stages:
         npm install
       displayName: 'Install npm packages'
 
+- stage: SCA
+  displayName: 'SCA - Dependency Check'
+  dependsOn: Build
+  jobs:
+  - job: DependencyCheck
+    displayName: 'OWASP Dependency Check'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: dependency-check-build-task@6
+      inputs:
+        projectName: 'juice-shop'
+        scanPath: '$(Build.SourcesDirectory)'
+        format: 'HTML'
+        failOnCVSS: '7'
+        enableRetired: true
+      displayName: 'Run OWASP Dependency Check - HTML'
+
+    - task: dependency-check-build-task@6
+      inputs:
+        projectName: 'juice-shop'
+        scanPath: '$(Build.SourcesDirectory)'
+        format: 'JUNIT'
+        failOnCVSS: '7'
+        enableRetired: true
+      displayName: 'Run OWASP Dependency Check - JUNIT'
+
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/dependency-check-junit.xml'
+      displayName: 'Publish Dependency Check Results'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Common.TestResultsDirectory)'
+        ArtifactName: 'SCA-Report'
+      displayName: 'Publish SCA Report'
 # -----------------------------
 # Stage 2 - Test
 # -----------------------------
@@ -66,31 +104,31 @@ stages:
 # -----------------------------
 # Stage 3 - Docker
 # -----------------------------
-- stage: Docker
-  displayName: 'Build Docker Image'
-  dependsOn: Test
+#- stage: Docker
+#  displayName: 'Build Docker Image'
+#  dependsOn: Test
 
-  jobs:
-  - job: DockerBuild
+#  jobs:
+#  - job: DockerBuild
 
-    steps:
-    - checkout: self
+#    steps:
+#    - checkout: self
 
-    - script: |
-        docker build -t $(imageName):$(Build.BuildId) .
-      displayName: 'Docker Build'
+#    - script: |
+#        docker build -t $(imageName):$(Build.BuildId) .
+#      displayName: 'Docker Build'
 
 # -----------------------------
 # Stage 4 - Publish
 # -----------------------------
-- stage: Publish
-  displayName: 'Publish Image'
-  dependsOn: Docker
+#- stage: Publish
+#  displayName: 'Publish Image'
+#  dependsOn: Docker
 
-  jobs:
-  - job: Publish
+#  jobs:
+#  - job: Publish
 
-    steps:
-    - script: |
-        echo "Publishing image will be added later."
-      displayName: 'Placeholder'
+#    steps:
+#    - script: |
+#        echo "Publishing image will be added later."
+#      displayName: 'Placeholder'
