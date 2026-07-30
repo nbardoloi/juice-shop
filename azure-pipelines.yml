@@ -94,8 +94,11 @@ stages:
         configMode: 'manual'
         cliProjectKey: 'nbardoloi'       # e.g. nbardoloi_juice-shop
         cliProjectName: 'juice-shop'
+        extraProperties: |
+          sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.json,**/test/**,**/frontend/dist/**
         organization: 'nbardoloi'     # e.g. nbardoloi
       displayName: 'Prepare SonarQube Analysis'
+
     - task: SonarCloudAnalyze@4
       inputs:
         jdkversion: 'JAVA_HOME_17_X64'
