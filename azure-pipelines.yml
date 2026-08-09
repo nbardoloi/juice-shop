@@ -94,8 +94,11 @@ stages:
         configMode: 'manual'
         cliProjectKey: 'nbardoloi'       # e.g. nbardoloi_juice-shop
         cliProjectName: 'juice-shop'
+        extraProperties: |
+          sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.json,**/test/**,**/frontend/dist/**
         organization: 'nbardoloi'     # e.g. nbardoloi
       displayName: 'Prepare SonarQube Analysis'
+
     - task: SonarCloudAnalyze@4
       inputs:
         jdkversion: 'JAVA_HOME_17_X64'
@@ -121,7 +124,7 @@ stages:
     - task: Docker@2
       inputs:
         containerRegistry: '$(acrServiceConnection)'
-        repository: '$(imageName)'
+        repository: 'nbardoloi/juice-shop'
         command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
         tags: |
@@ -129,6 +132,11 @@ stages:
           latest
       displayName: 'Build & Push Docker Image'
 
+    - script: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        trivy --version
+      displayName: 'Install Trivy'        # ← add this in Stage 4
+      
     # Trivy scan on the built image
     - script: |
         trivy image \
