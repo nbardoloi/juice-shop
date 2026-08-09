@@ -1,0 +1,36 @@
+trigger:
+  branches:
+    include:
+      - master
+
+resources:
+  repositories:
+  - repository: self
+    type: github
+    endpoint: github.com_nbardoloi    # GitHub service connection
+    name: nbardoloi/juice-shop
+
+stages:
+- stage: Deploy
+  jobs:
+  - job: Infrastructure_and_Code
+    steps:
+    # Task 1 - Create App Service Plan via Bicep
+    - task: AzureResourceManagerTemplateDeployment@3
+      inputs:
+        deploymentScope: 'Resource Group'
+        azureResourceManagerConnection: 'demo-wif-auto'    # Azure service connection
+        subscriptionId: '826d75e6-31fb-4b04-b9d6-50cfa34b5db2'
+        action: 'Create Or Update Resource Group'
+        resourceGroupName: 'rg-appservice'
+        location: 'eastus'
+        templateLocation: 'Linked artifact'
+        csmFile: '$(Build.SourcesDirectory)/main.bicep'
+        deploymentMode: 'Incremental'
+
+    # Task 2 - Deploy app to App Service
+    - task: AzureWebApp@1
+      inputs:
+        azureSubscription: 'demo-wif-auto'                 # Azure service connection
+        appName: 'juice-shop-nbardoloi'
+        package: '$(System.DefaultWorkingDirectory)/**/*.zip'
