@@ -2,7 +2,9 @@ trigger:
   branches:
     include:
       - master
-
+  paths:
+    include:
+      - IAC_AppServicePlan/**  
 resources:
   repositories:
   - repository: self
