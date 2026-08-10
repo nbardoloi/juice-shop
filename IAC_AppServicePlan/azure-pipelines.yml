@@ -21,6 +21,13 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
+    - task: CmdLine@2
+      inputs:
+        script: |
+          echo Write your commands here
+                find $(Build.SourcesDirectory) -name "*.bicep"
+          echo Hello world
+
     # Task 1 - Create Resource Group and App Service Plan
     - task: AzureResourceManagerTemplateDeployment@3
       displayName: 'Deploy Bicep - Resource Group & App Service Plan'
