@@ -26,6 +26,7 @@ stages:
         script: |
           echo Write your commands here
                 find $(Build.SourcesDirectory) -name "*.bicep"
+           dir $(Build.SourcesDirectory)/IAC_AppServicePlan
           echo Hello world
 
 # # Task 1 - Create Resource Group and App Service Plan
