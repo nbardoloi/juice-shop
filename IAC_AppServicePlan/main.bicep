@@ -2,6 +2,8 @@ targetScope = 'subscription'
 
 param location string = 'eastus'
 param resourceGroupName string = 'rg-juiceshop'
+param appServicePlanName string = 'interview-prep-plan'
+param webAppName string = 'interview-prep-webapp-${uniqueString(subscription().id)}'
 
 // Create Resource Group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -15,5 +17,7 @@ module resources 'appservice.bicep' = {
   scope: rg
   params: {
     location: location
+    appServicePlanName: appServicePlanName    // ← add this
+    webAppName: webAppName                    // ← add this
   }
 }
