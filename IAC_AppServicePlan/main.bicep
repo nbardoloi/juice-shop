@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param location string = 'eastus'
+param location string = 'westus'
 param resourceGroupName string = 'rg-juiceshop'
 param appServicePlanName string = 'interview-prep-plan'
 param webAppName string = 'juiceshop-nb-${uniqueString(subscription().id)}'
