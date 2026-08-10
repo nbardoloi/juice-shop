@@ -28,14 +28,15 @@ stages:
                 find $(Build.SourcesDirectory) -name "*.bicep"
           echo Hello world
 
-    # Task 1 - Create Resource Group and App Service Plan
-    - task: AzureResourceManagerTemplateDeployment@3
-      displayName: 'Deploy Bicep - Resource Group & App Service Plan'
-      inputs:
-        deploymentScope: 'Subscription'        # ← Subscription level to create RG
-        azureResourceManagerConnection: 'demo-wif-auto'
-        subscriptionId: '826d75e6-31fb-4b04-b9d6-50cfa34b5db2'
-        location: 'eastus'
-        templateLocation: 'Linked artifact'
-        csmFile: '$(Build.SourcesDirectory)/IAC_AppServicePlan/main.bicep'
-        deploymentMode: 'Incremental'
+# # Task 1 - Create Resource Group and App Service Plan
+    #   Settings
+    #   - task: AzureResourceManagerTemplateDeployment@3
+    #   displayName: 'Deploy Bicep - Resource Group & App Service Plan'
+    #   inputs:
+    #     deploymentScope: 'Subscription'
+    #     azureResourceManagerConnection: 'demo-wif-auto'
+    #     subscriptionId: '826d75e6-31fb-4b04-b9d6-50cfa34b5db2'
+    #     location: 'eastus'
+    #     templateLocation: 'Linked artifact'
+    #     csmFile: '$(Build.SourcesDirectory)/IAC_AppServicePlan/main.bicep'
+    #     deploymentMode: 'Incremental'
