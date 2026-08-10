@@ -2,35 +2,41 @@ trigger:
   branches:
     include:
       - master
+  paths:
+    include:
+      - IAC_AppServicePlan/**
 
-resources:
-  repositories:
-  - repository: self
-    type: github
-    endpoint: github.com_nbardoloi    # GitHub service connection
-    name: nbardoloi/juice-shop
+variables:
+  azureServiceConnection: 'demo-wif-auto'
+  subscriptionId: '826d75e6-31fb-4b04-b9d6-50cfa34b5db2'
+  resourceGroupName: 'rg-juiceshop'
+  location: 'eastus'
 
 stages:
 - stage: Deploy
+  displayName: 'Create Infrastructure'
   jobs:
-  - job: Infrastructure_and_Code
+  - job: Infrastructure
+    displayName: 'Create Resource Group and App Service Plan'
+    pool:
+      vmImage: 'ubuntu-latest'
     steps:
-    # Task 1 - Create App Service Plan via Bicep
-    - task: AzureResourceManagerTemplateDeployment@3
+    - task: CmdLine@2
       inputs:
-        deploymentScope: 'Resource Group'
-        azureResourceManagerConnection: 'demo-wif-auto'    # Azure service connection
+        script: |
+          echo Write your commands here
+                find $(Build.SourcesDirectory) -name "*.bicep"
+           dir $(Build.SourcesDirectory)/IAC_AppServicePlan
+          echo Hello world
+
+ # Task 1 - Create Resource Group and App Service Plan
+    - task: AzureResourceManagerTemplateDeployment@3
+      displayName: 'Deploy Bicep - Resource Group & App Service Plan'
+      inputs:
+        deploymentScope: 'Subscription'
+        azureResourceManagerConnection: 'demo-wif-auto'
         subscriptionId: '826d75e6-31fb-4b04-b9d6-50cfa34b5db2'
-        action: 'Create Or Update Resource Group'
-        resourceGroupName: 'rg-appservice'
         location: 'eastus'
         templateLocation: 'Linked artifact'
-        csmFile: '$(Build.SourcesDirectory)/main.bicep'
+        csmFile: '$(Build.SourcesDirectory)/IAC_AppServicePlan/main.bicep'
         deploymentMode: 'Incremental'
-
-    # Task 2 - Deploy app to App Service
-    - task: AzureWebApp@1
-      inputs:
-        azureSubscription: 'demo-wif-auto'                 # Azure service connection
-        appName: 'juice-shop-nbardoloi'
-        package: '$(System.DefaultWorkingDirectory)/**/*.zip'

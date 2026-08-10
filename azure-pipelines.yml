@@ -2,7 +2,10 @@ trigger:
   branches:
     include:
       - master
-
+  paths:
+    exclude:
+      - IAC_AppServicePlan/**    # ← exclude this folder
+      - '**.md'                  # ← optionally exclude readme changes too
 pool:
   vmImage: 'ubuntu-latest'
 
