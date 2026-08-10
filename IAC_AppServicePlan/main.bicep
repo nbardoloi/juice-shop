@@ -3,7 +3,7 @@ targetScope = 'subscription'
 param location string = 'eastus'
 param resourceGroupName string = 'rg-juiceshop'
 param appServicePlanName string = 'interview-prep-plan'
-param webAppName string = 'interview-prep-webapp-${uniqueString(subscription().id)}'
+param webAppName string = 'juiceshop-nb-${uniqueString(subscription().id)}'
 
 // Create Resource Group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
