@@ -83,34 +83,34 @@ stages:
 # ═══════════════════════════════════════════════
 # STAGE 3 — SAST (SonarQube Cloud - Static Analysis)
 # ═══════════════════════════════════════════════
-- stage: SAST
-  displayName: 'Stage 3 - SAST (SonarQube Cloud)'
-  dependsOn: Build_Application
-  jobs:
-  - job: SonarScan
-    displayName: 'SonarQube Cloud Static Analysis'
-    steps:
-    - task: SonarCloudPrepare@4
-      inputs:
-        SonarQube: 'SonarConn'        # your service connection name
-        scannerMode: 'CLI'
-        configMode: 'manual'
-        cliProjectKey: 'nbardoloi'       # e.g. nbardoloi_juice-shop
-        cliProjectName: 'juice-shop'
-        extraProperties: |
-          sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/generated/**,**/*.d.ts,**/*.min.js,**/*.min.css,**/vendor/**,**/charts/**,**/k8s/**
-        organization: 'nbardoloi'     # e.g. nbardoloi
-      displayName: 'Prepare SonarQube Analysis'
+#- stage: SAST
+#  displayName: 'Stage 3 - SAST (SonarQube Cloud)'
+#  dependsOn: Build_Application
+#  jobs:
+ # - job: SonarScan
+ #   displayName: 'SonarQube Cloud Static Analysis'
+ #   steps:
+ #   - task: SonarCloudPrepare@4
+ #     inputs:
+ #       SonarQube: 'SonarConn'        # your service connection name
+ #       scannerMode: 'CLI'
+ #       configMode: 'manual'
+ #       cliProjectKey: 'nbardoloi'       # e.g. nbardoloi_juice-shop
+ #       cliProjectName: 'juice-shop'
+ #       extraProperties: |
+ #         sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/generated/**,**/*.d.ts,**/*.min.js,**/*.min.css,**/vendor/**,**/charts/**,**/k8s/**
+ #       organization: 'nbardoloi'     # e.g. nbardoloi
+ #     displayName: 'Prepare SonarQube Analysis'
 
-    - task: SonarCloudAnalyze@4
-      inputs:
-        jdkversion: 'JAVA_HOME_17_X64'
-      displayName: 'Run SonarQube Analysis'
+  #  - task: SonarCloudAnalyze@4
+  #    inputs:
+  #      jdkversion: 'JAVA_HOME_17_X64'
+  #    displayName: 'Run SonarQube Analysis'
 
-    -   task: SonarCloudPublish@4
-        inputs:
-          pollingTimeoutSec: '300'
-        displayName: 'Publish SonarQube Results'
+  #  -   task: SonarCloudPublish@4
+  #      inputs:
+  #        pollingTimeoutSec: '300'
+ #       displayName: 'Publish SonarQube Results'
 
 # ═══════════════════════════════════════════════
 # STAGE 4 — BUILD & PUSH DOCKER IMAGE
