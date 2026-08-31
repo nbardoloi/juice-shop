@@ -98,7 +98,7 @@ stages:
         cliProjectKey: 'nbardoloi'       # e.g. nbardoloi_juice-shop
         cliProjectName: 'juice-shop'
         extraProperties: |
-          sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.json,**/test/**,**/frontend/dist/**
+          sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/generated/**,**/*.d.ts,**/*.min.js,**/*.min.css,**/vendor/**,**/charts/**,**/k8s/**
         organization: 'nbardoloi'     # e.g. nbardoloi
       displayName: 'Prepare SonarQube Analysis'
 
