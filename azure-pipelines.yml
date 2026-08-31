@@ -90,8 +90,9 @@ stages:
   jobs:
   - job: SonarScan
     displayName: 'SonarQube Cloud Static Analysis'
-     steps:
-      script 'This task is disabled'
+    steps:
+    - script: echo "This task is disabled"
+      displayName: 'SAST disabled placeholder'
    # - task: SonarCloudPrepare@4
      # inputs:
       #  SonarQube: 'SonarConn'        # your service connection name
@@ -102,7 +103,7 @@ stages:
       #  extraProperties: |
        #   sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/generated/**,**/*.d.ts,**/*.min.js,**/*.min.css,**/vendor/**,**/charts/**,**/k8s/**
       #  organization: 'nbardoloi'     # e.g. nbardoloi
-      #vdisplayName: 'Prepare SonarQube Analysis'
+      # displayName: 'Prepare SonarQube Analysis'
 
    # - task: SonarCloudAnalyze@4
     #  inputs:
