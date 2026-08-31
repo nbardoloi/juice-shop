@@ -86,9 +86,10 @@ stages:
 - stage: SAST
   displayName: 'Stage 3 - SAST (SonarQube Cloud)'
   dependsOn: Build_Application
-#  jobs:
- # - job: SonarScan
- #   displayName: 'SonarQube Cloud Static Analysis'
+  jobs:
+  - job: SonarScan
+    displayName: 'SonarQube Cloud Static Analysis'
+    echo 'SonarScan is disabled'
  #   steps:
  #   - task: SonarCloudPrepare@4
  #     inputs:
