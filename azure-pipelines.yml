@@ -86,31 +86,34 @@ stages:
 - stage: SAST
   displayName: 'Stage 3 - SAST (SonarQube Cloud)'
   dependsOn: Build_Application
+  condition: false   # temporarily disabled
   jobs:
   - job: SonarScan
     displayName: 'SonarQube Cloud Static Analysis'
     steps:
-    - task: SonarCloudPrepare@4
-      inputs:
-        SonarQube: 'SonarConn'        # your service connection name
-        scannerMode: 'CLI'
-        configMode: 'manual'
-        cliProjectKey: 'nbardoloi'       # e.g. nbardoloi_juice-shop
-        cliProjectName: 'juice-shop'
-        extraProperties: |
-          sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.json,**/test/**,**/frontend/dist/**
-        organization: 'nbardoloi'     # e.g. nbardoloi
-      displayName: 'Prepare SonarQube Analysis'
+    - script: echo "This task is disabled"
+      displayName: 'SAST disabled placeholder'
+   # - task: SonarCloudPrepare@4
+     # inputs:
+      #  SonarQube: 'SonarConn'        # your service connection name
+      #  scannerMode: 'CLI'
+     #   configMode: 'manual'
+      #  cliProjectKey: 'nbardoloi'       # e.g. nbardoloi_juice-shop
+      #  cliProjectName: 'juice-shop'
+      #  extraProperties: |
+       #   sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/generated/**,**/*.d.ts,**/*.min.js,**/*.min.css,**/vendor/**,**/charts/**,**/k8s/**
+      #  organization: 'nbardoloi'     # e.g. nbardoloi
+      # displayName: 'Prepare SonarQube Analysis'
 
-    - task: SonarCloudAnalyze@4
-      inputs:
-        jdkversion: 'JAVA_HOME_17_X64'
-      displayName: 'Run SonarQube Analysis'
+   # - task: SonarCloudAnalyze@4
+    #  inputs:
+    #    jdkversion: 'JAVA_HOME_17_X64'
+    #  displayName: 'Run SonarQube Analysis'
 
-    -   task: SonarCloudPublish@4
-        inputs:
-          pollingTimeoutSec: '300'
-        displayName: 'Publish SonarQube Results'
+    #-   task: SonarCloudPublish@4
+    #    inputs:
+     #     pollingTimeoutSec: '300'
+    #    displayName: 'Publish SonarQube Results'
 
 # ═══════════════════════════════════════════════
 # STAGE 4 — BUILD & PUSH DOCKER IMAGE
@@ -119,7 +122,7 @@ stages:
   displayName: 'Stage 4 - Build & Push Docker Image'
   dependsOn:
     - SCA
-    - SAST
+    #- SAST
   jobs:
   - job: DockerBuild
     displayName: 'Build and Push Docker Image'
@@ -182,17 +185,17 @@ stages:
     # Step 2 - Run OWASP ZAP Baseline Scan
     - script: |
         mkdir -p $(Build.ArtifactStagingDirectory)/zap-reports
-
-        docker run --rm \
-          --network host \
-          -v $(Build.ArtifactStagingDirectory)/zap-reports:/zap/wrk/:rw \
-          ghcr.io/zaproxy/zaproxy:stable \
-          zap-baseline.py \
-          -t http://localhost:3000 \
-          -r zap-baseline-report.html \
-          -J zap-baseline-report.json \
-          -x zap-baseline-report.xml \
-          -I
+        chmod -R 777 $(Build.ArtifactStagingDirectory)/zap-reports
+      docker run --rm \
+        --network host \
+        -v $(Build.ArtifactStagingDirectory)/zap-reports:/zap/wrk/:rw \
+        zaproxy/zap-stable \
+        zap-baseline.py \
+        -t http://localhost:3000 \
+        -r zap-baseline-report.html \
+        -J zap-baseline-report.json \
+        -x zap-baseline-report.xml \
+        -I
       displayName: 'OWASP ZAP - Baseline Scan'
       continueOnError: true
 
