@@ -186,7 +186,7 @@ stages:
     - script: |
         mkdir -p $(Build.ArtifactStagingDirectory)/zap-reports
         chmod -R 777 $(Build.ArtifactStagingDirectory)/zap-reports
-      docker run --rm \
+        docker run --rm \
         --network host \
         -v $(Build.ArtifactStagingDirectory)/zap-reports:/zap/wrk/:rw \
         zaproxy/zap-stable \
