@@ -16,11 +16,44 @@ variables:
   acrServiceConnection: 'dockerhub-connection'  # Azure service connection name
 
 # ═══════════════════════════════════════════════
-# STAGE 1 — BUILD APPLICATION
+# STAGE 1 — SECRET SCAN, BUILD APPLICATION
 # ═══════════════════════════════════════════════
 stages:
+- stage: SecretScan
+  displayName: 'Stage 0 - Secret Scanning (Gitleaks)'
+  jobs:
+    - job: GitleaksScan
+      pool:
+        vmImage: 'ubuntu-latest'
+      steps:
+        - checkout: self
+          fetchDepth: 0   # full history, not just latest commit — secrets can hide in old commits
+
+        - script: |
+            wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz
+            tar -xzf gitleaks_8.18.4_linux_x64.tar.gz
+            sudo mv gitleaks /usr/local/bin/
+          displayName: 'Install Gitleaks'
+
+        - script: |
+            gitleaks detect \
+              --source . \
+              --report-format json \
+              --report-path $(Build.ArtifactStagingDirectory)/gitleaks-report.json \
+              --exit-code 1
+          displayName: 'Run Gitleaks scan'
+          continueOnError: false   # a found secret should hard-block the pipeline
+
+        - task: PublishBuildArtifacts@1
+          condition: always()      # publish the report even if the scan step failed
+          inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)/gitleaks-report.json'
+            ArtifactName: 'Secret-Scan-Report'
+
 - stage: Build_Application
   displayName: 'Stage 1 - Build Application'
+  dependsOn: SecretScan
+  condition: succeeded()
   jobs:
   - job: Build
     displayName: 'Install & Build'
