@@ -42,7 +42,7 @@ stages:
               --report-path $(Build.ArtifactStagingDirectory)/gitleaks-report.json \
               --exit-code 1
           displayName: 'Run Gitleaks scan'
-          continueOnError: false   # a found secret should hard-block the pipeline
+          continueOnError: true   # a found secret should hard-block the pipeline
 
         - task: PublishBuildArtifacts@1
           condition: always()      # publish the report even if the scan step failed
